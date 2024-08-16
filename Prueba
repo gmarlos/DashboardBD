@@ -1,0 +1,70 @@
+# -*- coding: UTF-8 -*- 
+###################################################################
+# Programa para crear entidades en Power BI
+# Autor: Marlos E. Gomez
+# Creado el: 24/07/2024 05:12 pm
+###################################################################
+
+
+#DBeaver
+
+
+
+# -*- coding: UTF-8 -*- 
+###################################################################
+# Programa para crear entidades en Power BI
+# Autor: Marlos E. Gomez
+# Creado el: 24/07/2024 05:12 pm
+###################################################################
+
+from datetime import date
+from datetime import timedelta
+import pyodbc
+from datetime import datetime
+import urllib3
+import requests
+import pandas as pd
+import matplotlib
+
+
+# Variables generales de entidad
+EntityDesde = date(2022, 1, 1)
+# Obtiene el ultimo día del mes actual
+EntityHasta = date(date.today().year, (date.today().month + 1), 1) - timedelta(days=1)
+EntityHasta = date(2024, 2, 1)
+
+# Variables de conexion
+SQLServer = '192.168.1.164'
+SQLDataBase = 'QuerySAP'
+SQLUser = 'soporte'
+SQLPassword = 'soporte'
+
+
+#Se realiza la conexion a la BD
+try:
+    conexion = pyodbc.connect( f'DRIVER={{SQL Server}};SERVER={SQLServer};DATABASE={SQLDataBase};UID={SQLUser};PWD={SQLPassword}')
+    print("Conexión exitosa!")
+except pyodbc.Error as pyerr:
+    print(f'Error al conectar en SQL\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
+
+ventasSAP_UBICACION_GPS = "10.369771106959664, -66.985640815946553"
+
+gpsPoint = f"geography::POINT({ventasSAP_UBICACION_GPS}, 4326)"
+print(gpsPoint)
+
+
+SQL_Command = "Insert Ventas (SOCIEDAD, FACTURA, UBICACION_GPS) VALUES (?, ?, ?)"
+
+conexion.cursor().execute(SQL_Command,
+            '1010'
+           ,'1025555255'
+           ,gpsPoint)
+
+
+resultID = conexion.cursor().fetchval()
+print(f"Insertado: {resultID}")
+
+conexion.cursor().commit()
+
+
+print("Terminado")
