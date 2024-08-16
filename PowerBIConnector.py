@@ -26,8 +26,11 @@ SQLServer = '192.168.1.164'
 SQLDataBase = 'QuerySAP'
 SQLUser = 'soporte'
 SQLPassword = 'soporte'
+SAPUser = "WSAPIREST"
+SAPPassword = "123456"
 
-Metas = None
+#Metas = None
+#Vendedores = None
 pdSQL = None
 pdSSAP = None
 preVENTAS = None
@@ -40,7 +43,9 @@ except pyodbc.Error as pyerr:
     print(f'Error al conectar en SQL\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
 
 
+###########################################################################################
 # Devuelve la ultima fecha almacenada en BD
+###########################################################################################
 def GetLastDateInSQL():
     #tableDate = conexion.cursor().execute("Select Max(FECHA) As LastDate From Ventas Where FECHA <= '2024-02-29'")
     tableDate = conexion.cursor().execute("Select Max(FECHA) As LastDate From Ventas")
@@ -55,21 +60,80 @@ def GetLastDateInSQL():
 
         return toDate
 
+###########################################################################################
+### Se obtienen las metas
+###########################################################################################
+def GetMetas():
+    try:
+        SQL_Command = "Select * From Metas Order By ANO, MES, SOCIEDAD, ID_MARCA1, ID_MARCA2"
+
+        tableDataSQL = conexion.cursor().execute(SQL_Command)
+
+        columns = [column[0] for column in tableDataSQL.description]
+        return pd.DataFrame.from_records(data=tableDataSQL, columns=columns)
+    except pyodbc.Error as pyerr:
+        print(f'Error al ejecutar en SQL\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
+
+
+###########################################################################################
+### Se obtienen los vendedores
+###########################################################################################
+def GetVendedores():
+    APIurl = f'https://200.125.191.156:44300/sap/bc/zapi_salesman?sap-client=400'
+
+    urllib3.disable_warnings()
+    try:
+        petition = requests.get(APIurl, auth=(SAPUser, SAPPassword), verify=False)
+        
+        if petition.status_code == 200:
+            dataSAP = petition.json()
+            pdData = pd.DataFrame(dataSAP["VENDEDORES"])
+            return pdData
+        else:
+            return None
+        
+    except requests.exceptions.Timeout as errT: 
+        print(f'Error de tiempo: {petition.status_code} | {errT}'.json())
+    except requests.exceptions.HTTPError as errH: 
+        print(f'Error de HTTP: {petition.status_code} | {errH}'.json())
+    except requests.exceptions.RequestException as errX:
+        print(f'Error: {petition.status_code} | {errX}'.json())
+
+
+###########################################################################################
+### Se obtienen los clientes
+###########################################################################################
+def GetClientes():
+    APIurl = f'https://200.125.191.156:44300/sap/bc/zapi_salesman?sap-client=400'
+
+    urllib3.disable_warnings()
+    try:
+        petition = requests.get(APIurl, auth=(SAPUser, SAPPassword), verify=False)
+        
+        if petition.status_code == 200:
+            dataSAP = petition.json()
+            pdData = pd.DataFrame(dataSAP["VENTAS"])
+            return pdData
+        else:
+            return None
+        
+    except requests.exceptions.Timeout as errT: 
+        print(f'Error de tiempo: {petition.status_code} | {errT}'.json())
+    except requests.exceptions.HTTPError as errH: 
+        print(f'Error de HTTP: {petition.status_code} | {errH}'.json())
+    except requests.exceptions.RequestException as errX:
+        print(f'Error: {petition.status_code} | {errX}'.json())
+
+
 
 # Se obtiene la ultima fecha almacenada en BD
 lastDateInBD = GetLastDateInSQL()
+Metas = GetMetas()
+Vendedores = GetVendedores()
+Clientes = GetClientes()
 
 # Se consulta la BD para optimizar la consulta
 try:
-    #########################
-    ### Se obtienen las metas
-    #########################
-    SQL_Command = "Select * From Metas Order By ANO, MES, SOCIEDAD, ID_MARCA1, ID_MARCA2"
-
-    tableDataSQL = conexion.cursor().execute(SQL_Command)
-
-    columns = [column[0] for column in tableDataSQL.description]
-    Metas = pd.DataFrame.from_records(data=tableDataSQL, columns=columns)
 
     ##########################
     ### Se obtienen las ventas

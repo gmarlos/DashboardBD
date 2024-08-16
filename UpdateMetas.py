@@ -14,7 +14,6 @@ import pandas as pd
 import sys
 import pyodbc
 
-
 #Variables generales de entidad
 ANO = 2024
 MES = ''
