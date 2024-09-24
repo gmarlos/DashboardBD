@@ -16,11 +16,11 @@ import pyodbc
 
 #Variables generales de entidad
 ANO = 2024
-MES = ''
+MES = '09'
 SAPUser = "WSAPIREST"
 SAPPassword = "APIR3st@123"
 APIurlMetas = f'https://200.125.191.156:44301/sap/bc/zapi_metas?sap-client=400&SOCIEDADFROM=1010&SOCIEDADTO=1020&ANO={ANO}&MES={MES}'
-print(APIurlMetas)
+#print(APIurlMetas)
 
 
 # Funciones
@@ -71,7 +71,7 @@ try:
     print('Conexión SQL exitosa')
 
     # Se eliminan los datos de metas ya existentes
-    #conexion.cursor().execute("Delete From Metas Where ANO = ? AND MES = ?", ANO, MES)
+    conexion.cursor().execute("Delete From Metas Where ANO = ? AND MES = ?", ANO, MES)
     #conexion.cursor().execute("Delete From Metas Where ANO = ?", ANO)
 
     # Se graban los cambios
@@ -79,46 +79,51 @@ try:
 
     # Se obtiene el total de registros a insertar
     iRegs = len(metasSAP)
-    nPorc = 100 / iRegs
+    if (iRegs > 0):
+        nPorc = 100 / iRegs
+
     TotalRegs = 0
 
     for iMeta in range(len(metasSAP)):
         TotalRegs += nPorc
 
-        print(f"Sociedad.: {metasSAP.iloc[iMeta]['SOCIEDAD']} | Marca: {metasSAP.iloc[iMeta]['MARCA1']} | Avance: {int(TotalRegs)}%                          ", end="\r")
+        print(f"Sociedad.: {metasSAP.iloc[iMeta]['SOCIEDAD']} | Marca: {metasSAP.iloc[iMeta]['MARCA1']} | Mes: {metasSAP.iloc[iMeta]['MES']} | Avance: {int(TotalRegs)}%                          ", end="\r")
 
         SQL_Command = """Insert Metas (
             SOCIEDAD,
-            ID_MARCA1,
-            ID_MARCA2,
-            MES,
             ANO,
+            MES,
+            ID_MARCA1,
             MARCA1,
+            ID_MARCA2,
             MARCA2,
-            DIAS_HAB,
+            MARCA,
+            ID_VENDEDOR,
+            VENDEDOR,
+            TIPO,
             METAS_UNIDAD,
             METAS_NACIONAL_DOLARES,
-            METAS_EXPORTACION_DOLARES,
-            BACKORDER,
             META_RENTABILIDAD)
             VALUES (?"""
         
-        SQL_Command += repeat(", ?", 12) + ")"
+        SQL_Command += repeat(", ?", 13) + ")"
+        #SQL_Command += ", ?" * 13
 
         conexion.cursor().execute(SQL_Command,
             metasSAP.iloc[iMeta]['SOCIEDAD']
-           ,metasSAP.iloc[iMeta]['ID_MARCA1']
-           ,metasSAP.iloc[iMeta]['ID_MARCA2']
-           ,int(metasSAP.iloc[iMeta]['MES'])
            ,int(metasSAP.iloc[iMeta]['ANO'])
+           ,int(metasSAP.iloc[iMeta]['MES'])
+           ,metasSAP.iloc[iMeta]['ID_MARCA1']
            ,metasSAP.iloc[iMeta]['MARCA1']
+           ,metasSAP.iloc[iMeta]['ID_MARCA2']
            ,metasSAP.iloc[iMeta]['MARCA2']
-           ,int(metasSAP.iloc[iMeta]['DIAS_HAB'])
+           ,metasSAP.iloc[iMeta]['MARCA']
+           ,metasSAP.iloc[iMeta]['ID_VENDEDOR']
+           ,metasSAP.iloc[iMeta]['VENDEDOR']
+           ,metasSAP.iloc[iMeta]['TIPO']
            ,float(metasSAP.iloc[iMeta]['METAS_UNIDAD'])
-           ,float(metasSAP.iloc[iMeta]['METAS_NACIONAL_DOLARES'])
-           ,float(metasSAP.iloc[iMeta]['METAS_EXPORTACION_DOLARES'])
-           ,float(metasSAP.iloc[iMeta]['BACKORDER'])
-           ,float(metasSAP.iloc[iMeta]['META_RENTABILIDAD'])
+           ,float(metasSAP.iloc[iMeta]['METAS_DOL'])
+           ,float(metasSAP.iloc[iMeta]['PUNTOS_RENTABILIDAD'])
         )
 
         #resultID = conexion.cursor().fetchval()

@@ -17,13 +17,14 @@ import pyodbc
 
 #Variables generales de entidad
 #fec_Desde = date(2022, 1, 1)
-fec_Desde = date(2024, 1, 23)
+fec_Desde = date(2024, 8, 1)
 # Obtiene el ultimo día del mes actual
 #fec_Hasta = date(date.today().year, (date.today().month + 1), 1) - timedelta(days=1)
-fec_Hasta = date(2024, 2, 29)
+fec_Hasta = date(2024, 8, 31)
 SAPUser = "WSAPIREST"
 SAPPassword = "123456"
-APIurlVentas = f'https://200.125.191.156:44300/sap/bc/zapi_sales01?sap-client=400&FECHA_DESDE={fec_Desde.strftime('%d/%m/%Y')}&FECHA_HASTA={fec_Hasta.strftime('%d/%m/%Y')}'
+SAPPassword = "APIR3st@123"
+APIurlVentas = f'https://200.125.191.156:44301/sap/bc/zapi_sales01?sap-client=400&FECHA_DESDE={fec_Desde.strftime('%d/%m/%Y')}&FECHA_HASTA={fec_Hasta.strftime('%d/%m/%Y')}'
 #print(APIurlMetas)
 
 
@@ -86,79 +87,79 @@ try:
     nPorc = 100 / iRegs
     TotalRegs = 0
 
+    SQL_Command = """Insert Ventas (
+        SOCIEDAD
+        ,FACTURA
+        ,ANULADA
+        ,FECHA
+        ,TIPO_DOCUMENTO_SAP
+        ,CLASE_DOCUMENTO
+        ,TIPO_DOCUMENTO
+        ,ID_CONDICION
+        ,CONDICION
+        ,FECHA_VENCE_FISCAL
+        ,FECHA_DESPACHO
+        ,FECHA_RECEPCION
+        ,FECHA_VENCE_PVENTAS
+        ,FECHA_VENCE_ADMINISTRATIVA
+        ,ID_CLIENTE
+        ,CLIENTE
+        ,RIF
+        ,TIPO_CLIENTE
+        ,ID_CLASIFICACION
+        ,CLASIFICACION
+        ,CODIGO_ESTADO
+        ,ESTADO
+        ,ID_PAIS
+        ,PAIS
+        ,DIRECCION_FISCAL
+        ,DIRECCION_FISCAL_FACTURA
+        ,DIRECCION_ENTREGA
+        ,GEOLOC
+        ,IDIOMA
+        ,TELEFONO1
+        ,EMAIL
+        ,ID_ZONAVENTA
+        ,ZONAVENTA
+        ,ID_VENDEDOR
+        ,VENDEDOR
+        ,EMAIL_VENDEDOR
+        ,TIPO_VENDEDOR
+        ,CANAL_VENDEDOR
+        ,MONEDA
+        ,TASA
+        ,FECHA_TASA
+        ,BASEIMPONIBLE
+        ,IVA
+        ,TOTAL
+        ,POSICION
+        ,ID_MATERIAL
+        ,ID_COMERCIAL
+        ,MATERIAL
+        ,ID_GRUPO_MAT1
+        ,GRUPO_MAT1
+        ,ID_GRUPO_MAT2
+        ,GRUPO_MAT2
+        ,ID_GRUPO_MAT3
+        ,GRUPO_MAT3
+        ,ID_GRUPO_MAT4
+        ,GRUPO_MAT4
+        ,CATEGORIA_RENTABILIDAD
+        ,PUNTAJE_RENTABILIDAD
+        ,CANTIDAD
+        ,PRECIO_UNITARIO
+        ,BASEIMPONIBLE_RENGLON
+        ,PORCENTAJE_IVA
+        ,IVA_RENGLON
+        ,TOTAL_RENGLON)
+        VALUES (?"""
+
+    SQL_Command += repeat(", ?", 63) + ")"
+
     for iVenta in range(len(ventasSAP)):
         TotalRegs += nPorc
 
-        print(f"Factura No.: {ventasSAP.iloc[iVenta]['FACTURA']} | Producto: {ventasSAP.iloc[iVenta]['ID_COMERCIAL']} | Avance: {int(TotalRegs)}%                          ", end="\r")
-
-        SQL_Command = """Insert Ventas (
-            SOCIEDAD
-            ,FACTURA
-            ,ANULADA
-            ,FECHA
-            ,TIPO_DOCUMENTO_SAP
-            ,CLASE_DOCUMENTO
-            ,TIPO_DOCUMENTO
-            ,ID_CONDICION
-            ,CONDICION
-            ,FECHA_VENCE_FISCAL
-            ,FECHA_DESPACHO
-            ,FECHA_RECEPCION
-            ,FECHA_VENCE_PVENTAS
-            ,FECHA_VENCE_ADMINISTRATIVA
-            ,ID_CLIENTE
-            ,CLIENTE
-            ,RIF
-            ,TIPO_CLIENTE
-            ,ID_CLASIFICACION
-            ,CLASIFICACION
-            ,CODIGO_ESTADO
-            ,ESTADO
-            ,ID_PAIS
-            ,PAIS
-            ,DIRECCION_FISCAL
-            ,DIRECCION_FISCAL_FACTURA
-            ,DIRECCION_ENTREGA
-            ,GEOLOC
-            ,IDIOMA
-            ,TELEFONO1
-            ,EMAIL
-            ,ID_ZONAVENTA
-            ,ZONAVENTA
-            ,ID_VENDEDOR
-            ,VENDEDOR
-            ,EMAIL_VENDEDOR
-            ,TIPO_VENDEDOR
-            ,CANAL_VENDEDOR
-            ,MONEDA
-            ,TASA
-            ,FECHA_TASA
-            ,BASEIMPONIBLE
-            ,IVA
-            ,TOTAL
-            ,POSICION
-            ,ID_MATERIAL
-            ,ID_COMERCIAL
-            ,MATERIAL
-            ,ID_GRUPO_MAT1
-            ,GRUPO_MAT1
-            ,ID_GRUPO_MAT2
-            ,GRUPO_MAT2
-            ,ID_GRUPO_MAT3
-            ,GRUPO_MAT3
-            ,ID_GRUPO_MAT4
-            ,GRUPO_MAT4
-            ,CATEGORIA_RENTABILIDAD
-            ,PUNTAJE_RENTABILIDAD
-            ,CANTIDAD
-            ,PRECIO_UNITARIO
-            ,BASEIMPONIBLE_RENGLON
-            ,PORCENTAJE_IVA
-            ,IVA_RENGLON
-            ,TOTAL_RENGLON)
-            VALUES (?"""
-        
-        SQL_Command += repeat(", ?", 63) + ")"
+        print(f"Factura No.: {ventasSAP.iloc[iVenta]['FACTURA']} | Cliente: {ventasSAP.iloc[iVenta]['ID_CLIENTE']} | Producto: {ventasSAP.iloc[iVenta]['ID_COMERCIAL']} | Avance: {int(TotalRegs)}%                          ", end="\r")
 
         if ventasSAP.iloc[iVenta]['FECHA_DESPACHO'] == '0000-00-00':
             fecha_Despacho = None
@@ -173,7 +174,17 @@ try:
         if ventasSAP.iloc[iVenta]['UBICACION_GPS'] == '':
             gpsPoint = 'POINT(0 0)'
         else:
-            gpsPoint = (('POINT(' + ventasSAP.iloc[iVenta]['UBICACION_GPS'] + ')').replace(' ', '')).replace(',', ' ')
+            if ("," in ventasSAP.iloc[iVenta]['UBICACION_GPS']):
+                gpsPoint = (('POINT(' + ventasSAP.iloc[iVenta]['UBICACION_GPS'] + ')').replace('  ', ' '))
+
+                if (", " in gpsPoint):
+                    gpsPoint = gpsPoint.replace(',', '')
+
+                if (" " not in gpsPoint and "," in gpsPoint):
+                    gpsPoint = gpsPoint.replace(',', ' ')
+
+            else:
+                gpsPoint = (('POINT(' + ventasSAP.iloc[iVenta]['UBICACION_GPS'] + ')').replace('  ', ' '))
 
         #gpsPoint = 'geography::POINT(40.7128, -74.0060, 4326)'
         #gpsPoint = 'POINT(40.7128 -74.0060)'
@@ -256,13 +267,12 @@ try:
     conexion.close()
 
 except pyodbc.Error as pyerr:
-    print(f'Error al operar en SQL | Documento: {ventasSAP.iloc[iVenta]['FACTURA']} | Producto: {ventasSAP.iloc[iVenta]['ID_COMERCIAL']}\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
+    print(f'\nError al operar en SQL | Documento: {ventasSAP.iloc[iVenta]['FACTURA']} | Producto: {ventasSAP.iloc[iVenta]['ID_COMERCIAL']}\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
 
     conexion.cursor().rollback()
     conexion.close()
 
-print("Proceso terminado!")
-
+print("\nProceso terminado!")
 
 
 #https://jsonplaceholder.typicode.com/guide/
