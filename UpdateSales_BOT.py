@@ -323,7 +323,7 @@ def Update_SalesSQL(call):
     except requests.exceptions.RequestException as errX:
         return f'Error: {petition.status_code} | {errX}'.json()
 
-    bot.answer_callback_query(call.id, 'Proceso terminado!')
+    print("\nProceso terminado!")
 
 
 def Start_Task(call):
