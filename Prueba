@@ -5,33 +5,10 @@
 # Creado el: 24/07/2024 05:12 pm
 ###################################################################
 
-
-#DBeaver
-
-
-
-# -*- coding: UTF-8 -*- 
-###################################################################
-# Programa para crear entidades en Power BI
-# Autor: Marlos E. Gomez
-# Creado el: 24/07/2024 05:12 pm
-###################################################################
-
-from datetime import date
-from datetime import timedelta
+import sqlalchemy
+from sqlalchemy import create_engine
 import pyodbc
-from datetime import datetime
-import urllib3
-import requests
 import pandas as pd
-import matplotlib
-
-
-# Variables generales de entidad
-EntityDesde = date(2022, 1, 1)
-# Obtiene el ultimo día del mes actual
-EntityHasta = date(date.today().year, (date.today().month + 1), 1) - timedelta(days=1)
-EntityHasta = date(2024, 2, 1)
 
 # Variables de conexion
 SQLServer = '192.168.1.164'
@@ -40,31 +17,87 @@ SQLUser = 'soporte'
 SQLPassword = 'soporte'
 
 
-#Se realiza la conexion a la BD
+engine = create_engine("mssql+pyodbc://" + SQLUser + ":" + SQLPassword + "@"+ SQLServer + "/" + SQLDataBase + "?driver=ODBC+Driver+17+for+SQL+Server")
+conexion = engine.connect()
+#ALmacenamos nuestra consulta en un variable
+
+query = '''Select Top 50
+            ID_VENTAS,
+            FACTURA,
+            ID_CLIENTE,
+            CLIENTE,
+            CANTIDAD,
+            PORCENTAJE_IVA As CANTIDAD1,
+            CANTIDAD As CANTIDAD2,
+            CANTIDAD As CANTIDAD3,
+            CANTIDAD As CANTIDAD4,
+	        PRECIO_UNITARIO,
+	        BASEIMPONIBLE_RENGLON,
+	        PORCENTAJE_IVA,
+	        IVA_RENGLON,
+	        TOTAL_RENGLON
+        From dbo.Ventas'''
+
+#Leemos nuestra consulta
+Ventas = pd.read_sql(query, conexion)
+#Ventas.dtypes
+VentasT = Ventas.astype({'ID_CLIENTE': 'str', 
+                        'CANTIDAD': 'float',
+                        'CANTIDAD1': 'float16',
+                        'CANTIDAD2': 'float32',
+                        'CANTIDAD3': 'float64',
+                        'PRECIO_UNITARIO': 'float', 'BASEIMPONIBLE_RENGLON': 'float'})
+
+
+Ventas.head()
+
+
 try:
     conexion = pyodbc.connect( f'DRIVER={{SQL Server}};SERVER={SQLServer};DATABASE={SQLDataBase};UID={SQLUser};PWD={SQLPassword}')
     print("Conexión exitosa!")
 except pyodbc.Error as pyerr:
     print(f'Error al conectar en SQL\nError No:{pyerr.args[1]}\nError:{pyerr.args[0]}')
 
-ventasSAP_UBICACION_GPS = "10.369771106959664, -66.985640815946553"
 
-gpsPoint = f"geography::POINT({ventasSAP_UBICACION_GPS}, 4326)"
-print(gpsPoint)
+SQL_Command = """
+            Select Top 50
+                ID_VENTAS,
+                SOCIEDAD,
+                FACTURA,
+                ANULADA,
+                FECHA,
+                TIPO_DOCUMENTO_SAP, CLASE_DOCUMENTO, TIPO_DOCUMENTO,
+                ID_CONDICION, CONDICION,
+                FECHA_VENCE_FISCAL, FECHA_DESPACHO, FECHA_RECEPCION, FECHA_VENCE_PVENTAS, FECHA_VENCE_ADMINISTRATIVA,
+                ID_CLIENTE, CLIENTE, RIF, TIPO_CLIENTE,
+                ID_CLASIFICACION, CLASIFICACION,
+                CODIGO_ESTADO, ESTADO,
+                ID_PAIS, PAIS,
+                DIRECCION_FISCAL, DIRECCION_FISCAL_FACTURA, DIRECCION_ENTREGA,
+                IIF(Replace(Replace(SubString([UBICACION_GPS], 8, Len([UBICACION_GPS])), ')', ''), ' ', ', ') = '0, 0', '',
+                RTrim(LTrim(Replace(Replace(SubString([UBICACION_GPS], 8, Len([UBICACION_GPS])), ')', ''), ' ', ', ')))) As UBICACION_GPS,
+                IDIOMA,
+                TELEFONO1, EMAIL,
+                ID_ZONAVENTA, ZONAVENTA,
+                ID_VENDEDOR, VENDEDOR, EMAIL_VENDEDOR, TIPO_VENDEDOR, CANAL_VENDEDOR,
+                MONEDA,
+                TASA,
+                FECHA_TASA,
+                BASEIMPONIBLE, IVA, TOTAL,
+                POSICION,
+                ID_MATERIAL, ID_COMERCIAL, MATERIAL,
+                ID_GRUPO_MAT1, GRUPO_MAT1,
+                ID_GRUPO_MAT2, GRUPO_MAT2,
+                ID_GRUPO_MAT3, GRUPO_MAT3,
+                ID_GRUPO_MAT4, GRUPO_MAT4,
+                CATEGORIA_RENTABILIDAD, PUNTAJE_RENTABILIDAD,
+                CANTIDAD,
+                PRECIO_UNITARIO, BASEIMPONIBLE_RENGLON, PORCENTAJE_IVA, IVA_RENGLON, TOTAL_RENGLON
+            From Ventas"""
 
+tableDataSQL = conexion.cursor().execute(SQL_Command)
 
-SQL_Command = "Insert Ventas (SOCIEDAD, FACTURA, UBICACION_GPS) VALUES (?, ?, ?)"
+columns = [column[0] for column in tableDataSQL.description]
+Ventas2 = pd.DataFrame.from_records(data=tableDataSQL, columns=columns)
 
-conexion.cursor().execute(SQL_Command,
-            '1010'
-           ,'1025555255'
-           ,gpsPoint)
-
-
-resultID = conexion.cursor().fetchval()
-print(f"Insertado: {resultID}")
-
-conexion.cursor().commit()
-
-
-print("Terminado")
+Ventas2.head()
